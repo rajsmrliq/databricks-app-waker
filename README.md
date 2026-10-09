@@ -12,7 +12,7 @@ https://app-waker.<subdomain>.workers.dev/<app-name>[/any/deep/link?query]
 - **App stopped:** the Worker starts it through the Apps API and shows a "<app> is starting" page that re-checks every `POLL_SECONDS` and redirects once the app really serves. A refresh checks at once.
 - **App crashed or the start is refused:** the page says so instead of spinning.
 
-It only wakes apps. Pair it with something that stops them (see [Stopping](#stopping)).
+The repo also has the other half, [`idle_stop.py`](idle_stop.py): drop it into your app and the app stops itself when nobody is using it (see [Stopping](#stopping)).
 
 ## Why a Worker
 
@@ -83,8 +83,21 @@ If a Declarative Automation Bundle deploys the app, the bundle owns two ACLs, an
 
 Standard Databricks Apps never stop on their own. Pick one:
 
-- **On a schedule:** a job that runs `databricks apps stop <app-name>` in the evening.
-- **When idle:** the app stops itself after N minutes without user requests. Count only requests that carry the `X-Forwarded-Email` header (real signed-in users, not platform health checks), then call `WorkspaceClient().apps.stop(name=...)` with the app's own credentials. The app's own service principal needs `CAN_MANAGE` on the app.
+- **When idle (recommended): [`idle_stop.py`](idle_stop.py).** Copy it into your app; for FastAPI/Starlette it is two lines after `app = FastAPI(...)`:
+
+  ```python
+  from idle_stop import install_idle_stop
+  install_idle_stop(app)
+  ```
+
+  The app stops itself after `IDLE_TIMEOUT_MIN` (default 30) minutes without signed-in user requests. Only requests carrying `X-Forwarded-Email` count, so platform health checks never keep it awake. Set `IDLE_DRY_RUN=true` on the first deploy to watch the log line before it stops anything; the module's docstring lists every setting and how to wire other frameworks. One grant, once per app: the app's **own** service principal needs `CAN_MANAGE` on the app (declare it in the bundle's `permissions` if a bundle manages the app):
+
+  ```bash
+  SP=$(databricks apps get my-app -o json | jq -r .service_principal_client_id)
+  databricks apps update-permissions my-app --json "{\"access_control_list\": [{\"service_principal_name\": \"$SP\", \"permission_level\": \"CAN_MANAGE\"}]}"
+  ```
+
+- **On a schedule:** a job that runs `databricks apps stop <app-name>` in the evening. Blunter: it also stops an app someone is using.
 
 ## Security
 
@@ -101,3 +114,5 @@ Standard Databricks Apps never stop on their own. Pick one:
 | `worker.test.mjs` | offline tests (fake Databricks): `node --test worker.test.mjs` |
 | `wrangler.toml` | Worker name and non-secret settings |
 | `setup.sh` | one-time Databricks service principal and grants |
+| `idle_stop.py` | the stop half: drop into your app so it stops itself when idle |
+| `idle_stop_test.py` | offline tests (fake SDK and framework): `python idle_stop_test.py` |
