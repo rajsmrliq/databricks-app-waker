@@ -116,3 +116,7 @@ Standard Databricks Apps never stop on their own. Pick one:
 | `setup.sh` | one-time Databricks service principal and grants |
 | `idle_stop.py` | the stop half: drop into your app so it stops itself when idle |
 | `idle_stop_test.py` | offline tests (fake SDK and framework): `python idle_stop_test.py` |
+
+## License
+
+MIT, see [LICENSE](LICENSE).
