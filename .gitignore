@@ -1,3 +1,4 @@
 node_modules/
 # wrangler's local cache
 .wrangler/
+__pycache__/
