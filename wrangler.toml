@@ -1,0 +1,11 @@
+# Databricks App waker (worker.mjs). Deploy from this folder: npx wrangler deploy
+# The secret never goes here:  npx wrangler secret put DATABRICKS_CLIENT_SECRET
+name = "app-waker"
+main = "worker.mjs"
+compatibility_date = "2026-10-01"
+
+[vars]
+DATABRICKS_HOST = "https://<your-workspace>.cloud.databricks.com"   # no trailing slash
+DATABRICKS_CLIENT_ID = "<service-principal-application-id>"         # printed by setup.sh
+LAUNCH_APPS = "my-app"   # comma-separated allow-list of Databricks App names; nothing else wakes
+POLL_SECONDS = "300"     # how often the waiting page re-checks; a refresh checks at once
