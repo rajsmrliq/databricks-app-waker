@@ -1,0 +1,2 @@
+# bash breaks on CRLF ("$'\r': command not found"), so keep LF even on Windows checkouts
+*.sh text eol=lf
